@@ -1,7 +1,7 @@
 import "./style.css";
 import * as THREE from "three";
 import { Pane } from "tweakpane";
-import { OrbitControls } from "three/examples/jsm/Addons.js";
+import { GLTFLoader, OrbitControls } from "three/examples/jsm/Addons.js";
 import * as dat from "dat.gui";
 
 const pane = new Pane();
@@ -32,11 +32,25 @@ const environmentMap = cubeTextureLoader.load([
   "textures/environmentMaps/3/nz.png",
 ]);
 
+// GLTF Loader
+const gltfLoader = new GLTFLoader();
+let mixer = null;
+gltfLoader.load("/models/drone.glb", (i) => {
+  console.log(i);
+  // for (let child of i.scene.children) {
+  //   scene.add(child);
+  // }
+  scene.add(i.scene);
+  // mixer
+  mixer = new THREE.AnimationMixer(i.scene);
+  const action = mixer.clipAction(i.animations[0]);
+  action.play();
+});
 /**
  * Lights
  */
 // initialize the light
-const light = new THREE.AmbientLight(0xffffff, 0);
+const light = new THREE.AmbientLight(0xffffff, 1);
 scene.add(light);
 
 const pointLight = new THREE.PointLight(0xffffff, 1.2);
@@ -142,13 +156,17 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.physicallyCorrectLights = true;
 
 const clock = new THREE.Clock();
+let previousTime = 0;
 const renderLoop = () => {
   const elapsedTime = clock.getElapsedTime();
+  const deltaTime = elapsedTime - previousTime;
   sphereMesh.rotation.y = 0.1 * elapsedTime;
 
   // Update controls
   controls.update();
-
+  if (mixer) {
+    mixer.update(deltaTime);
+  }
   // Update Render
   renderer.render(scene, camera);
 
